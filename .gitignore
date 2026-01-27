@@ -1,0 +1,10 @@
+# Ignore Databricks system files
+__pycache__/
+*.pyc
+
+# Ignore Streamlit secrets
+.streamlit/secrets.toml
+**/.streamlit/secrets.toml
+
+# Optional: Ignore virtual envs if you have them
+.venv/
