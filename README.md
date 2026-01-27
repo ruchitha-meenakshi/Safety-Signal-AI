@@ -85,8 +85,8 @@ This project consciously adopts a **Code-First Engineering** approach over Datab
 
 ### Application Preview
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/4b604bcf-39af-46ad-9fc5-e23ee06770f8" width="48%" alt="Dashboard"/>
-  <img src="https://github.com/user-attachments/assets/84743292-be50-4718-85f8-0dc815fad485" width="48%" alt="Reports"/>
+  <img src="assets/Dashboard_view_1.png" width="48%" alt="Dashboard"/>
+  <img src="assets/Dashboard_view_2.png" width="48%" alt="Reports"/>
 </p>
 
 *The operational interface for Safety Managers to monitor risks.*
@@ -101,8 +101,8 @@ This project consciously adopts a **Code-First Engineering** approach over Datab
 ## Model Performance & Evaluation
 The model was evaluated on a strictly separated external test set of 43,396 reviews to prevent data leakage.
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/52574711-b386-4b4b-ad9e-f7765a8d96b1" width="48%" alt="Dashboard"/>
-  <img src="https://github.com/user-attachments/assets/8c4a3b7e-24c5-4653-8880-837801f0347e" width="48%" alt="Reports"/>
+  <img src="assets/AUC-ROC_curve.png" width="48%" alt="ROC Curve"/>
+  <img src="assets/confusion matrix.png" width="48%" alt="Confusion Matrix"/>
 </p>
 
 ### Key Metrics (External Test Set)
