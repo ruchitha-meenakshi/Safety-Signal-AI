@@ -59,7 +59,7 @@ The system is architected as a sequential Databricks Workflow consisting of 5 no
 * **Dataset Profile:** 215,000+ Patient Reviews (UCI ML Repository).
 * **Data Dictionary:** A detailed data dictionary is included in the repository to define all schema fields (e.g., `usefulCount`, `rating`) and variable constraints.
 * **Missing Data Handling:** **<1% (~900)** of reviews had missing/null conditions. These were **preserved** to maintain scientific integrity, as the model relies on the review text, not the metadata.
-* **Class Imbalance Strategy:** The dataset exhibited a strong "Positivity Bias" (mostly Safe reviews). We addressed this by:
+* **Class Imbalance Strategy:** The dataset exhibited a strong "Positivity Bias" (mostly Safe reviews). This was addressed by:
     1. **Dropping Neutrals:** Removing ratings 5-6 to create a sharper decision boundary.
     2. **TF-IDF Vectorization:** Penalizing high-frequency generic terms to prevent dominant topics (e.g., "Birth Control") from overpowering rare safety signals.
 ---
@@ -74,7 +74,7 @@ This project consciously adopts a **Code-First Engineering** approach over Datab
 | Challenge | Engineering Decision | Why? |
 | :--- | :--- | :--- |
 |**Label Noise** | **Drop "Neutral" Ratings** | Ratings 5 & 6 were ambiguous. Removing them created a sharper decision boundary, improving model Recall.|
-| **Auditability** | **Logistic Regression vs. BERT** | We chose a linear model over Deep Learning to ensure Explainability. Safety teams need coefficient-based reasons (e.g., weight=+0.8) for why a signal was flagged. |
+| **Auditability** | **Logistic Regression vs. BERT** | A linear model was chosen over Deep Learning to ensure Explainability. Safety teams need coefficient-based reasons (e.g., weight=+0.8) for why a signal was flagged. |
 | **Data Privacy** | **SHA-256 Hashing** | Raw IDs are never exposed in the Silver/Gold layers, ensuring the system is "Secure by Design". |
 | **Pipeline Reliability** | **Shutil vs. DBUtils** | `dbutils.fs.cp` failed on Shared Clusters due to isolation security. Switching to Python's `shutil` ensured the pipeline runs on any Databricks cluster mode.|
 
@@ -114,7 +114,7 @@ The model was evaluated on a strictly separated external test set of 43,396 revi
 | **Specificity** | **93.7%**| **Low False Alarms:** Correctly identifies 94% of safe reviews to minimize alert fatigue. |
 | **Accuracy** | **82.4%** | **Reliability:** Strong overall predictive power on unseen data. |
 
-*⚠️ Note: While Pharmacovigilance typically prioritizes Recall (catching all signals), our V1 linear model acts as an Efficiency Engine (High Precision). By optimizing for Precision (76%), we successfully automate the removal of 80% of the backlog (Safe cases), allowing humans to focus deeply on the flagged 20%.*
+*⚠️ Note: While Pharmacovigilance typically prioritizes Recall (catching all signals), our V1 linear model acts as an Efficiency Engine (High Precision). By optimizing for Precision (76%), this successfully automates the removal of 80% of the backlog (Safe cases), allowing humans to focus deeply on the flagged 20%.*
 
 ---
 ### Model Selection Rationale
