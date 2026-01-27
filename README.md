@@ -91,13 +91,56 @@ This project consciously adopts a **Code-First Engineering** approach over Datab
 * **Smart Filters:** Cascading dropdowns (Drug -> Condition) to drill down into specific cohorts.
 * **Explainable AI:** Displays the model's confidence probability to aid human decision-making.
 ---
-## 📊 Performance Metrics
-The model was evaluated on a strictly separated external test set to prevent data leakage.  
-* **AUC-ROC:**`0.876` (Strong discrimination between Safe/Adverse)
-* **Recall:** `82.4%` (High sensitivity to potential threats)
-* **Precision:** `81.8%` (High trust factor; low false alarm rate)
+## Model Performance & Evaluation
+The model was evaluated on a strictly separated external test set of 43,396 reviews to prevent data leakage.
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/52574711-b386-4b4b-ad9e-f7765a8d96b1" width="48%" alt="Dashboard"/>
+  <img src="https://github.com/user-attachments/assets/8c4a3b7e-24c5-4653-8880-837801f0347e" width="48%" alt="Reports"/>
+</p>
 
-*Note: In Pharmacovigilance, Recall is prioritized over Precision because missing a safety signal is more costly than reviewing a false alarm.*
+### Key Metrics (External Test Set)
+| Metric | Value | Interpretation |
+| :--- | :--- | :--- |
+| **AUC-ROC** | **0.87** | **Excellent Discrimination:** Exceeds the 0.80 medical AI standard; model effectively ranks risk. |
+| **Precision** | **76.2%** | **High Trust:** When flagged as adverse, 76% are truly adverse events. |
+| **Recall** | **53.1%** | **High-Confidence Filter:** Catches >50% of events while drastically reducing noise. |
+| **Specificity** | **93.7%**| **Low False Alarms:** Correctly identifies 94% of safe reviews to minimize alert fatigue. |
+| **Accuracy** | **82.4%** | **Reliability:** Strong overall predictive power on unseen data. |
+
+*⚠️ Note: While Pharmacovigilance typically prioritizes Recall (catching all signals), our V1 linear model acts as an Efficiency Engine (High Precision). By optimizing for Precision (76%), we successfully automate the removal of 80% of the backlog (Safe cases), allowing humans to focus deeply on the flagged 20%.*
+
+---
+### Model Selection Rationale
+**Logistic Regression + TF-IDF** was chosen over Deep Learning (BERT) for:
+1. **Explainability:** Can show coefficient weights (e.g., "bleeding" = +1.8) for regulatory compliance.
+2. **Speed:** Faster inference without GPU requirements.
+3. **Auditability:** Safety officers can verify why a case was flagged.
+---
+## Key Insights Discovered
+During validation on 43,396 reviews, PharmaSafety AI revealed actionable insights demonstrating value beyond simple classification:
+
+#### 1. Indication-Specific Risk Stratification
+* **Finding:** Safety profiles vary by diagnosis. Example: Depo-Provera had a 77.9% adverse event rate for Abnormal Uterine Bleeding vs. only 39.8% for Birth Control.
+* **Impact:** Enables precision monitoring protocols based on patient condition rather than just the drug.
+
+#### 2. Linguistic Signal Detection
+* **Finding:** Severity modifiers (e.g., "worse", "horrible") were stronger predictors than symptoms alone.
+* **Impact:** Explains why the model outperforms keyword searches—it captures the intensity of the patient experience.
+
+#### 3. Operational Efficiency (81% Workload Reduction)
+* **Finding:** The system autonomously auto-cleared 35,028 reviews as "Safe" (80.7% of total).
+* **Impact:** Filters out the "haystack" so safety teams can focus entirely on the flagged cases.
+
+#### 4. Error Pattern Analysis (Path to V2)
+* **Finding:** False negatives often contained subtle qualifiers (e.g., "It's okay but..."), while false positives often cited pre-existing conditions.
+* **Impact:** Provides a clear roadmap for V2 improvements using context-aware embeddings (BioBERT).
+---
+## Business Impact & Results
+
+* **Efficiency:** **Efficiency:** Automated the triage of **43,000+** patient reviews, achieving an **81% reduction in manual workload**.
+* **Safety:** Successfully identified **6,377 high-confidence adverse events** in the test set.
+* **Precision:** Achieved **76% Precision**, ensuring high trust and minimizing wasted time on false alarms.
+* **Speed & Usability:** Reduced "Time-to-Insight" from manual hours to **<2 minutes** (per 1,000 reviews) via an interactive dashboard that enables real-time risk visualization.
 
 ---
 ## Getting Started
@@ -144,23 +187,16 @@ streamlit run app.py
 
 ---
 
-## Business Impact & Results
-
-* **Efficiency:** Automated the triage of 50,000+ patient reviews.
-* **Safety:** Successfully identified high-risk signals (e.g., "Severe Bleeding") that might be missed in manual review.
-* **Usability:** Reduced "Time-to-Insight" for Safety Managers via the interactive dashboard.
-
----
 ## Future Roadmap & Enhancements
 
 While the current system provides a robust baseline for signal detection, the following enhancements are planned for V2 to further improve sensitivity and operational utility:
 
 * **Advanced NLP Models (BioBERT):**
-    * *Limitation:* Logistic Regression uses a "Bag of Words" approach, occasionally missing context (e.g., sarcasm or negation).
-    * *Upgrade:* Fine-tuning a domain-specific Transformer like **BioBERT** would allow the model to capture deep semantic context and handle complex medical narratives better.
+    * *Limitation:* Logistic Regression uses a "Bag of Words" approach, occasionally missing context (e.g., sarcasm or negation), resulting in moderate Recall (53%).
+    * *Upgrade:* Fine-tuning a domain-specific Transformer like **BioBERT** would allow the model to capture deep semantic context and handle complex medical narratives better, aiming for >90% Recall in V2
 * **Real-Time Streaming:**
     * *Current:* Batch processing via scheduled workflows.
-    * *Upgrade:* Implementing **Spark Structured Streaming** to ingest and flag social media (Twitter/Reddit) reports instantly as they are posted.
+    * *Upgrade:* Implementing Spark Structured Streaming to ingest and flag social media (Twitter/Reddit) reports instantly as they are posted.
 * **Human-in-the-Loop (Active Learning):**
     * *Upgrade:* Adding a "Feedback" button in the Streamlit dashboard allowing Safety Managers to correct misclassifications. These corrections would automatically be fed back into the Silver Layer to retrain and improve the model over time.
 ---
