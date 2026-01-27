@@ -55,7 +55,13 @@ The system is architected as a sequential Databricks Workflow consisting of 5 no
 * **Function:** Queries the **Gold Table** directly to display live predictions. It includes "Smart Filters" (Cascading Drug -> Condition Selection) and tooltips for metric definitions.
 
 ---
-
+## Data Strategy & Quality
+* **Dataset Profile:** 215,000+ Patient Reviews (UCI ML Repository).
+* **Missing Data Handling:** **<1% (~900)** of reviews had missing/null conditions. These were **preserved** to maintain scientific integrity, as the model relies on the review text, not the metadata.
+* **Class Imbalance Strategy:** The dataset exhibited a strong "Positivity Bias" (mostly Safe reviews). We addressed this by:
+    1. **Dropping Neutrals:** Removing ratings 5-6 to create a sharper decision boundary.
+    2. **TF-IDF Vectorization:** Penalizing high-frequency generic terms to prevent dominant topics (e.g., "Birth Control") from overpowering rare safety signals.
+---
 ## MLOps Strategy: Code-First vs. AutoML
 This project consciously adopts a **Code-First Engineering** approach over Databricks' low-code wizards (AutoML/Model Serving) to ensure control and auditability.
 * **Custom NLP Pipeline:** Instead of relying on generic AutoML, I built a custom **SparkML Pipeline** (`Tokenizer` → `StopWords` → `TF-IDF`) to specifically handle medical text nuances.  
