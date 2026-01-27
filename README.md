@@ -55,6 +55,65 @@ The system is architected as a sequential Databricks Workflow consisting of 5 no
 * **Function:** Queries the **Gold Table** directly to display live predictions. It includes "Smart Filters" (Cascading Drug -> Condition Selection) and tooltips for metric definitions.
 
 ---
+## ⚙️ Pipeline Orchestration
+
+The system is designed as a sequential DAG (Directed Acyclic Graph) managed by **Databricks Workflows**.
+
+<p align="center">
+  <img src="assets/databricks-workflow.png" width="90%" alt="Databricks Workflow DAG"/>
+</p>
+
+### Workflow Logic
+The pipeline consists of 5 dependent tasks that must run in order to ensure data integrity:
+
+1.  **01_Ingest_Source** → *Creates Unity Catalog structure & downloads raw data.*
+2.  **02_Bronze_Processing** → *Depends on Step 1. Ingests raw files into Delta.*
+3.  **03_Silver_Cleaning** → *Depends on Step 2. Hashes PII & cleans HTML.*
+4.  **04_EDA_Quality** → *Depends on Step 3. Filters noise & performs quality checks.*
+5.  **05_Model_Training** → *Depends on Step 4. Trains the model on the refined dataset.*
+
+### Production Job Configuration
+In a production setting, this is deployed as an automated Databricks Job. Below is the configuration logic used to enforce dependencies and alerting.
+
+<details>
+<summary><b>Click to view Job Configuration (JSON)</b></summary>
+
+```json
+{
+  "name": "PharmaSafety_ETL_Pipeline",
+  "tasks": [
+    {
+      "task_key": "ingest_source",
+      "notebook_task": { "notebook_path": "01_Setup_and_Ingest" }
+    },
+    {
+      "task_key": "bronze_processing",
+      "depends_on": [{"task_key": "ingest_source"}],
+      "notebook_task": { "notebook_path": "02_Bronze_Ingestion" }
+    },
+    {
+      "task_key": "silver_cleaning",
+      "depends_on": [{"task_key": "bronze_processing"}],
+      "notebook_task": { "notebook_path": "03_Silver_Cleaning_and_Privacy" }
+    },
+    {
+      "task_key": "model_training",
+      "depends_on": [{"task_key": "silver_cleaning"}],
+      "notebook_task": { "notebook_path": "05_Model_Training_and_Evaluation" }
+    }
+  ],
+  "schedule": {
+    "quartz_cron_expression": "0 0 2 * * ?",
+    "timezone_id": "UTC"
+  },
+  "email_notifications": {
+    "on_failure": ["safety-team@pharma.com"]
+  }
+}
+```
+</details>
+
+---
 ## Data Strategy & Quality
 * **Dataset Profile:** 215,000+ Patient Reviews (UCI ML Repository).
 * **Data Dictionary:** A detailed data dictionary is included in the repository to define all schema fields (e.g., `usefulCount`, `rating`) and variable constraints.
@@ -102,7 +161,7 @@ This project consciously adopts a **Code-First Engineering** approach over Datab
 The model was evaluated on a strictly separated external test set of 43,396 reviews to prevent data leakage.
 <p align="center">
   <img src="assets/AUC-ROC_curve.png" width="48%" alt="ROC Curve"/>
-  <img src="assets/confusion matrix.png" width="48%" alt="Confusion Matrix"/>
+  <img src="assets/confusion_matrix.png" width="48%" alt="Confusion Matrix"/>
 </p>
 
 ### Key Metrics (External Test Set)
@@ -114,7 +173,7 @@ The model was evaluated on a strictly separated external test set of 43,396 revi
 | **Specificity** | **93.7%**| **Low False Alarms:** Correctly identifies 94% of safe reviews to minimize alert fatigue. |
 | **Accuracy** | **82.4%** | **Reliability:** Strong overall predictive power on unseen data. |
 
-*⚠️ Note: While Pharmacovigilance typically prioritizes Recall (catching all signals), our V1 linear model acts as an Efficiency Engine (High Precision). By optimizing for Precision (76%), this successfully automates the removal of 80% of the backlog (Safe cases), allowing humans to focus deeply on the flagged 20%.*
+*⚠️ Note: While Pharmacovigilance typically prioritizes Recall (catching all signals), our V1 linear model acts as an Efficiency Engine (High Precision). By optimizing for Precision (76%), the system successfully automates the removal of 80% of the backlog (Safe cases), allowing humans to focus deeply on the flagged 20%.*
 
 ---
 ### Model Selection Rationale
@@ -144,7 +203,7 @@ During validation on 43,396 reviews, PharmaSafety AI revealed actionable insight
 ---
 ## Business Impact & Results
 
-* **Efficiency:** **Efficiency:** Automated the triage of **43,000+** patient reviews, achieving an **81% reduction in manual workload**.
+* **Efficiency:** Automated the triage of **43,000+** patient reviews, achieving an **81% reduction in manual workload**.
 * **Safety:** Successfully identified **6,377 high-confidence adverse events** in the test set.
 * **Precision:** Achieved **76% Precision**, ensuring high trust and minimizing wasted time on false alarms.
 * **Speed & Usability:** Reduced "Time-to-Insight" from manual hours to **<2 minutes** (per 1,000 reviews) via an interactive dashboard that enables real-time risk visualization.
@@ -200,7 +259,7 @@ While the current system provides a robust baseline for signal detection, the fo
 
 * **Advanced NLP Models (BioBERT):**
     * *Limitation:* Logistic Regression uses a "Bag of Words" approach, occasionally missing context (e.g., sarcasm or negation), resulting in moderate Recall (53%).
-    * *Upgrade:* Fine-tuning a domain-specific Transformer like **BioBERT** would allow the model to capture deep semantic context and handle complex medical narratives better, aiming for >90% Recall in V2
+    * *Upgrade:* Fine-tuning a domain-specific Transformer like **BioBERT** would allow the model to capture deep semantic context and handle complex medical narratives better, aiming for >90% Recall in V2.
 * **Real-Time Streaming:**
     * *Current:* Batch processing via scheduled workflows.
     * *Upgrade:* Implementing Spark Structured Streaming to ingest and flag social media (Twitter/Reddit) reports instantly as they are posted.
