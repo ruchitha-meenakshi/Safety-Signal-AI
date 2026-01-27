@@ -57,6 +57,7 @@ The system is architected as a sequential Databricks Workflow consisting of 5 no
 ---
 ## Data Strategy & Quality
 * **Dataset Profile:** 215,000+ Patient Reviews (UCI ML Repository).
+* **Data Dictionary:** A detailed data dictionary is included in the repository to define all schema fields (e.g., `usefulCount`, `rating`) and variable constraints.
 * **Missing Data Handling:** **<1% (~900)** of reviews had missing/null conditions. These were **preserved** to maintain scientific integrity, as the model relies on the review text, not the metadata.
 * **Class Imbalance Strategy:** The dataset exhibited a strong "Positivity Bias" (mostly Safe reviews). We addressed this by:
     1. **Dropping Neutrals:** Removing ratings 5-6 to create a sharper decision boundary.
