@@ -8,6 +8,9 @@
 
 > **Operationalizing AI to automate the detection of adverse drug events (ADEs) from patient narratives.**
 
+## 🎥 Project Demo
+> [Click here to watch the full video presentation and live demo on LinkedIn](https://www.linkedin.com/posts/ruchithauppuluri_codebasics-resumeprojectchallenge-databricks-activity-7422589161762705409-7jUS?utm_source=share&utm_medium=member_desktop&rcm=ACoAACijG-8BTsPM6tAdX5FjSKez9yFXjBY7Yi8)
+
 ## Context & Problem Statement
 
 ### The Business Challenge
