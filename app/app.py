@@ -235,3 +235,26 @@ if not df.empty:
         # Logic for Status Badge
         risk = row['probability']
         if row['prediction'] == 1.0:
+            color = "🔴" if risk > 0.9 else "🟠"
+            status = "Adverse Event"
+        else:
+            color = "🟢"
+            status = "Safe"
+        
+        # Professional Label Format
+        label = f"**{color} {row['condition']}** | {status} (Conf: {risk:.0%})"
+        
+        with st.expander(label):
+            c1, c2 = st.columns((3, 1))
+            with c1:
+                st.markdown("**Patient Narrative**")
+                st.markdown(f"> *\"{row['clean_review']}\"*")
+            with c2:
+                st.markdown("**Metadata**")
+                st.caption(f"💊 **Drug:** {row['drugName']}")
+                if 'date' in row and pd.notnull(row['date']):
+                    st.caption(f"📅 **Date:** {row['date'].strftime('%Y-%m-%d')}")
+                st.caption(f"⭐ **Rating:** {row.get('rating', 'N/A')}/10")
+
+else:
+    st.warning("⚠️ No data loaded. Check connection details.")
