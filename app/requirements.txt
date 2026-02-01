@@ -1,4 +1,6 @@
 streamlit
 pandas
+numpy
 plotly
-databricks-sql-connector>=3.0.0
+matplotlib
+seaborn

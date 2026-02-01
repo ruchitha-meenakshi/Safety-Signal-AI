@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-from databricks import sql
+import os
 
 # ------------------------------------------------------------------
 # 1. UI CONFIGURATION & STYLING
@@ -36,58 +36,64 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ------------------------------------------------------------------
-# 2. DATA CONNECTION
+# 2. DATA LOADING (SMART PATH FINDER)
 # ------------------------------------------------------------------
-try:
-    SERVER_HOSTNAME = st.secrets["DB_HOSTNAME"]
-    HTTP_PATH = st.secrets["DB_HTTP_PATH"]
-    ACCESS_TOKEN = st.secrets["DB_ACCESS_TOKEN"]
-except Exception as e:
-    st.error(f"❌ Missing Secrets! Check .streamlit/secrets.toml. Error: {e}")
-    st.stop()
-
-CATALOG = "safety_signal_catalog"
-SCHEMA = "raw_data"
-
-@st.cache_data(ttl=600)
+@st.cache_data(ttl=3600)
 def load_data():
     try:
-        connection = sql.connect(
-            server_hostname=SERVER_HOSTNAME,
-            http_path=HTTP_PATH,
-            access_token=ACCESS_TOKEN,
-            _disable_cloud_fetch=True
-        )
-        query = f"SELECT * FROM {CATALOG}.{SCHEMA}.gold_model_predictions LIMIT 5000"
-        with connection.cursor() as cursor:
-            cursor.execute(query)
-            result = cursor.fetchall()
-            if not result: return pd.DataFrame()
-            columns = [desc[0] for desc in cursor.description]
-            df = pd.DataFrame(result, columns=columns)
-            
-            # Cleaning & Parsing
-            if 'condition' in df.columns:
-                df = df[~df['condition'].astype(str).str.contains("users found|</span>|<span", case=False, regex=True)]
-            
-            if 'date' in df.columns: df['date'] = pd.to_datetime(df['date'], errors='coerce')
-            elif 'event_date' in df.columns: df['date'] = pd.to_datetime(df['event_date'], errors='coerce')
-            
-            def parse_risk_score(val):
-                try:
-                    if isinstance(val, str):
-                        clean_val = val.replace('[', '').replace(']', '') 
-                        parts = clean_val.split(',')
-                        return float(parts[1]) if len(parts) > 1 else float(parts[0])
-                    return float(val)
-                except: return 0.0
+        # Smart Path Logic: Finds the CSV whether run from root or app/ folder
+        possible_paths = [
+            "data/pharma_data.csv",       # From root
+            "../data/pharma_data.csv",    # From app/ folder
+            "pharma_data.csv"             # Same folder fallback
+        ]
+        
+        file_path = None
+        for path in possible_paths:
+            if os.path.exists(path):
+                file_path = path
+                break
+        
+        if not file_path:
+            st.error("⚠️ File 'pharma_data.csv' not found. Please check 'data' folder in GitHub.")
+            return pd.DataFrame()
 
-            if 'probability' in df.columns:
-                df['probability'] = df['probability'].apply(parse_risk_score)
-        connection.close()
+        # Load CSV
+        df = pd.read_csv(file_path)
+        
+        # --- DATA CLEANING & PARSING ---
+        
+        # 1. Handle Dates
+        if 'event_date' in df.columns:
+            df['date'] = pd.to_datetime(df['event_date'], errors='coerce')
+        elif 'date' in df.columns:
+            df['date'] = pd.to_datetime(df['date'], errors='coerce')
+
+        # 2. Filter HTML Artifacts
+        if 'condition' in df.columns:
+            df = df[~df['condition'].astype(str).str.contains("users found|</span>|<span", case=False, regex=True)]
+        
+        # 3. Parse Probability Strings (e.g., "[0.01, 0.99]")
+        def parse_risk_score(val):
+            try:
+                if isinstance(val, str):
+                    clean_val = val.replace('[', '').replace(']', '') 
+                    parts = clean_val.split(',')
+                    # Spark Vector is [prob_0, prob_1]. We want prob_1 (Adverse)
+                    if len(parts) > 1:
+                        return float(parts[1])
+                    return float(parts[0])
+                return float(val)
+            except:
+                return 0.0
+
+        if 'probability' in df.columns:
+            df['probability'] = df['probability'].apply(parse_risk_score)
+            
         return df
+        
     except Exception as e:
-        st.error(f"⚠️ Connection Error: {e}")
+        st.error(f"⚠️ Error Loading Data: {e}")
         return pd.DataFrame()
 
 # ------------------------------------------------------------------
@@ -229,27 +235,3 @@ if not df.empty:
         # Logic for Status Badge
         risk = row['probability']
         if row['prediction'] == 1.0:
-            color = "🔴" if risk > 0.9 else "🟠"
-            status = "Adverse Event"
-        else:
-            color = "🟢"
-            status = "Safe"
-        
-        # Professional Label Format
-        label = f"**{color} {row['condition']}** | {status} (Conf: {risk:.0%})"
-        
-        with st.expander(label):
-            c1, c2 = st.columns((3, 1))
-            with c1:
-                st.markdown("**Patient Narrative**")
-                st.markdown(f"> *\"{row['clean_review']}\"*")
-            with c2:
-                st.markdown("**Metadata**")
-                st.caption(f"💊 **Drug:** {row['drugName']}")
-                if 'date' in row and pd.notnull(row['date']):
-                    st.caption(f"📅 **Date:** {row['date'].strftime('%Y-%m-%d')}")
-                st.caption(f"⭐ **Rating:** {row.get('rating', 'N/A')}/10")
-
-else:
-    st.warning("⚠️ No data loaded. Check connection details.")
-
