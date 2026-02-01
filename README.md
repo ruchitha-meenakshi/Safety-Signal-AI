@@ -55,7 +55,9 @@ The system is architected as a sequential Databricks Workflow consisting of 5 no
 
 * **File:** `app.py`
 * **Tech:** Streamlit connected to Databricks SQL Warehouse.
-* **Function:** Queries the **Gold Table** directly to display live predictions. It includes "Smart Filters" (Cascading Drug -> Condition Selection) and tooltips for metric definitions.
+* **Function:** Visualizes the Gold Layer predictions. It includes "Smart Filters" (Cascading Drug -> Condition Selection) and tooltips for metric definitions.
+
+`Note: The live demo uses a static data snapshot to ensure 24/7 availability without requiring an active Databricks cluster.`
 
 ---
 ## ⚙️ Pipeline Orchestration
@@ -143,7 +145,7 @@ This project consciously adopts a **Code-First Engineering** approach over Datab
 ---
 ## 📸 Surveillance Dashboard
 
-📌 **Live App:** [*PharmaSafety AI*](https://pharmasafety-monitor-7474650018988990.aws.databricksapps.com)
+📌 **Live App:** [*PharmaSafety AI*](https://safety-signal-ai.streamlit.app/)
 
 ### Application Preview
 <p align="center">
@@ -231,6 +233,7 @@ During validation on 43,396 reviews, PharmaSafety AI revealed actionable insight
 
 ```bash
 git clone https://github.com/ruchitha-meenakshi/Safety-Signal-AI.git
+cd Safety-Signal-AI
 ```
 
 2. Install dependencies:
@@ -239,21 +242,12 @@ pip install -r requirements.txt
 
 ```
 
-3. Configure your secrets (create a `.streamlit/secrets.toml` file):
-
-```toml
-[DB_HOSTNAME] = "your-databricks-host.cloud.databricks.com"
-[DB_HTTP_PATH] = "sql/protocol/v1/..."
-[DB_ACCESS_TOKEN] = "dapi..."
-
-```
-
-4. Run the app:
+3. Run the app:
 ```bash
 streamlit run app.py
 
 ```
-
+> Note: The app runs using the local dataset in data/pharma_data.csv, so no Databricks connection credentials are required for the demo.
 ---
 
 ## Future Roadmap & Enhancements
